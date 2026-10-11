@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手绘等高线 → 三维地形生成器</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- 顶部标题栏 -->
+        <header class="titlebar">
+            <div class="title">手绘等高线 · 三维地形生成器</div>
+            <div class="titlebar-actions">
+                <span id="statusText" class="status-text">就绪</span>
+            </div>
+        </header>
+
+        <div class="main">
+            <!-- 最左侧：控制面板 -->
+            <aside class="panel">
+                <section class="panel-section">
+                    <h3>挡位设置</h3>
+                    <div class="field-row">
+                        <label>等高距（单位高度）</label>
+                        <div class="btn-group" id="intervalGroup">
+                            <button class="mode-btn active" data-interval="50" type="button">50 m</button>
+                            <button class="mode-btn" data-interval="100" type="button">100 m</button>
+                        </div>
+                    </div>
+                    <div class="field-row">
+                        <label>地图范围（面积）</label>
+                        <div class="btn-group" id="areaGroup">
+                            <button class="mode-btn active" data-area="25" type="button">25 km²</button>
+                            <button class="mode-btn" data-area="100" type="button">100 km²</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h3>绘图工具</h3>
+                    <div class="slider-row">
+                        <label>笔宽</label>
+                        <input type="range" id="penWidth" min="1" max="8" value="3" step="1">
+                        <span id="penWidthValue" class="value-label">3</span>
+                    </div>
+                    <div class="btn-row">
+                        <button id="btnUndo" class="tool-btn" type="button">撤销</button>
+                        <button id="btnClear" class="tool-btn danger" type="button">清空</button>
+                    </div>
+                    <button id="btnForceClose" class="tool-btn wide" type="button" title="将所有未闭合端点用直线连接">强制闭合未闭合线</button>
+                </section>
+
+                <section class="panel-section">
+                    <h3>选中线条</h3>
+                    <div id="selSection" class="muted">点击绘图区中的线条以选中</div>
+                    <div id="selEditor" hidden>
+                        <div class="slider-row">
+                            <label>高程 (m)</label>
+                            <input type="number" id="selElevation" class="num-input" step="50" placeholder="m">
+                        </div>
+                        <div class="btn-row">
+                            <button id="selApply" class="tool-btn" type="button">应用</button>
+                            <button id="selDelete" class="tool-btn danger" type="button">删除</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="panel-section">
+                    <h3>未闭合检测</h3>
+                    <ul id="warningList" class="warning-list"></ul>
+                </section>
+
+                <section class="panel-section">
+                    <h3>高度场计算</h3>
+                    <div class="field-row">
+                        <label>插值算法</label>
+                        <select id="algo" class="select">
+                            <option value="poisson" selected>调和插值（泊松）</option>
+                            <option value="idw">反距离加权（IDW）</option>
+                        </select>
+                    </div>
+                    <div class="field-row">
+                        <label>网格分辨率</label>
+                        <select id="resolution" class="select">
+                            <option value="128">128 × 128</option>
+                            <option value="256" selected>256 × 256</option>
+                            <option value="512">512 × 512</option>
+                        </select>
+                    </div>
+                    <div class="slider-row">
+                        <label>迭代次数</label>
+                        <input type="range" id="iterations" min="50" max="600" value="250" step="50">
+                        <span id="iterationsValue" class="value-label">250</span>
+                    </div>
+                    <label class="check-row"><input type="checkbox" id="autoUpdate" checked> 绘制后自动更新</label>
+                    <button id="btnGenerate" class="tool-btn wide primary" type="button">生成地形</button>
+                </section>
+
+                <section class="panel-section">
+                    <h3>三维显示</h3>
+                    <label class="check-row"><input type="checkbox" id="wireframe"> 线框模式</label>
+                    <label class="check-row"><input type="checkbox" id="showGrid" checked> 显示网格</label>
+                    <div class="muted">地形按真实比例渲染（1 场景单位 = 1 km）</div>
+                </section>
+            </aside>
+
+            <!-- 中间列：上=绘图区，下=高度场 -->
+            <section class="left-views">
+                <div class="view-pane draw-pane">
+                    <div class="pane-header">
+                        <span class="pane-title">绘图区 · 手绘等高线</span>
+                        <span class="pane-hint">画完一条线会要求输入高程；红点 = 未闭合端点</span>
+                    </div>
+                    <div class="canvas-wrap">
+                        <canvas id="drawCanvas"></canvas>
+                    </div>
+                </div>
+                <div class="view-pane field-pane">
+                    <div class="pane-header">
+                        <span class="pane-title">高度场预览</span>
+                        <span id="fieldRange" class="pane-hint"></span>
+                    </div>
+                    <div class="canvas-wrap">
+                        <canvas id="fieldCanvas"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右侧：三维预览 -->
+            <main class="viewport">
+                <canvas id="glCanvas"></canvas>
+                <div class="hint">拖拽旋转 · 滚轮缩放</div>
+                <div id="errorOverlay" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(0,0,0,0.85); color:#ff6b6b; padding:20px 30px; border-radius:8px; font-size:14px; line-height:1.8; z-index:100; white-space:pre-line; text-align:center; max-width:80%;"></div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 输入高程对话框 -->
+    <div id="elevDialog" class="dialog-mask" hidden>
+        <div class="dialog">
+            <div class="dialog-title">标记该等高线的高程</div>
+            <div class="dialog-hint" id="elevHint"></div>
+            <input type="number" id="elevInput" class="dialog-input" />
+            <div class="dialog-actions">
+                <button id="elevCancel" class="tool-btn" type="button">取消该线</button>
+                <button id="elevConfirm" class="tool-btn primary" type="button">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Three.js CDN -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
+
+                    <div class="slider-row">
+                        <label>迭代次数</label>
+                        <input type="range" id="iterations" min="50" max="600" value="250" step="50">
+                        <span id="iterationsValue" class="value-label">250</span>
+                    </div>
+                    <label class="check-row"><input type="checkbox" id="autoUpdate" checked> 绘制后自动更新</label>
+                    <button id="btnGenerate" class="tool-btn wide primary" type="button">生成地形</button>
+                </section>
