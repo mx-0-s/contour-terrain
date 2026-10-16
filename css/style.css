@@ -230,12 +230,12 @@ body {
 }
 
 .draw-pane {
-    flex: 3 1 0;
+    flex: 1 1 0;
     border-bottom: 1px solid #2c2c48;
 }
 
 .field-pane {
-    flex: 2 1 0;
+    flex: 1 1 0;
 }
 
 .pane-header {
@@ -264,13 +264,15 @@ body {
     flex: 1 1 auto;
     min-height: 0;
     padding: 8px;
+    display: grid;
+    place-items: center;
+    container-type: size;
 }
 
 .canvas-wrap canvas {
-    position: absolute;
-    inset: 8px;
-    width: calc(100% - 16px);
-    height: calc(100% - 16px);
+    position: relative;
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
     border: 1px solid #2c2c48;
     border-radius: 6px;
     touch-action: none;
@@ -617,9 +619,6 @@ body {
 }
 
 .canvas-wrap canvas {
-    inset: 10px;
-    width: calc(100% - 20px);
-    height: calc(100% - 20px);
     border-color: var(--border);
     border-radius: 4px;
 }
@@ -751,18 +750,26 @@ body {
     }
 
     .pane-header {
-        align-items: flex-start;
-        gap: 6px;
-        padding: 8px 10px;
+        height: 40px;
+        min-height: 40px;
+        flex: 0 0 40px;
+        gap: 8px;
+        padding: 6px 10px;
+        overflow: hidden;
     }
 
     .pane-title {
         font-size: 12px;
+        flex: 0 0 auto;
     }
 
     .pane-hint {
         max-width: 58%;
+        min-width: 0;
         font-size: 10px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .viewport {

@@ -27,7 +27,6 @@ function setStatus(t) { statusText.textContent = t; }
 
 const drawCanvas = document.getElementById('drawCanvas');
 const fieldCanvas = document.getElementById('fieldCanvas');
-const fieldCanvasWrap = document.querySelector('.field-pane .canvas-wrap');
 const algoSel = document.getElementById('algo');
 const resolutionSel = document.getElementById('resolution');
 const iterationsVal = document.getElementById('iterationsValue');
@@ -59,7 +58,6 @@ scene.add(dirLight2);
 const baseGroup = new THREE.Group();
 scene.add(baseGroup);
 let terrainMesh = null;
-let skirtMesh = null;
 let currentField = null;
 let genTimer = null;
 
@@ -124,7 +122,6 @@ function buildTerrain(field) {
     terrainMesh = new THREE.Mesh(geo, mat);
     scene.add(terrainMesh);
 
-    buildSkirt(field, side, span, seg);
 }
 
 function sampleBilinear(data, N, gx, gz) {
@@ -136,50 +133,6 @@ function sampleBilinear(data, N, gx, gz) {
     const v00 = data[z0 * N + x0], v10 = data[z0 * N + x1];
     const v01 = data[z1 * N + x0], v11 = data[z1 * N + x1];
     return (v00 * (1 - fx) + v10 * fx) * (1 - fz) + (v01 * (1 - fx) + v11 * fx) * fz;
-}
-
-function buildSkirt(field, side, span, seg) {
-    const N = field.N;
-    const half = side / 2;
-    const bottom = -side * 0.12;
-    const step = side / seg;
-    const verts = [];
-    const colorsArr = [];
-
-    const edgePts = [];
-    for (let i = 0; i <= seg; i++) edgePts.push([-half + i * step, half]);
-    for (let i = 1; i <= seg; i++) edgePts.push([half, half - i * step]);
-    for (let i = 1; i <= seg; i++) edgePts.push([half - i * step, -half]);
-    for (let i = 1; i < seg; i++) edgePts.push([-half, -half + i * step]);
-
-    const topYs = edgePts.map(([x, z]) => {
-        const gx = ((x + half) / side) * (N - 1);
-        const gz = ((z + half) / side) * (N - 1);
-        return (sampleBilinear(field.data, N, gx, gz) - field.min) / 1000;
-    });
-
-    for (let i = 0; i < edgePts.length; i++) {
-        const j = (i + 1) % edgePts.length;
-        const [x1, z1] = edgePts[i], [x2, z2] = edgePts[j];
-        const y1 = topYs[i], y2 = topYs[j];
-        verts.push(x1, y1, z1, x2, y2, z2, x2, bottom, z2);
-        verts.push(x1, y1, z1, x2, bottom, z2, x1, bottom, z1);
-        const c1 = elevationColor((y1 / (span / 1000 || 1)) * 0.6 + 0.2);
-        const c2 = elevationColor((y2 / (span / 1000 || 1)) * 0.6 + 0.2);
-        for (let k = 0; k < 6; k++) {
-            const c = (k === 0 || k === 3) ? c1 : c2;
-            colorsArr.push(c[0] / 255, c[1] / 255, c[2] / 255);
-        }
-    }
-
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-    g.setAttribute('color', new THREE.Float32BufferAttribute(colorsArr, 3));
-    g.computeVertexNormals();
-    skirtMesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
-        vertexColors: true, roughness: 0.95, metalness: 0, side: THREE.DoubleSide,
-    }));
-    scene.add(skirtMesh);
 }
 
 function resizeRenderer() {
@@ -196,12 +149,6 @@ function disposeTerrain() {
         terrainMesh.geometry.dispose();
         terrainMesh.material.dispose();
         terrainMesh = null;
-    }
-    if (skirtMesh) {
-        scene.remove(skirtMesh);
-        skirtMesh.geometry.dispose();
-        skirtMesh.material.dispose();
-        skirtMesh = null;
     }
 }
 
@@ -242,9 +189,9 @@ function generate() {
 }
 
 function updateFieldPreview() {
-    const rect = fieldCanvasWrap.getBoundingClientRect();
-    renderFieldView(fieldCanvas, currentField, board.strokes, {
-        cssW: rect.width, cssH: rect.height, showContours: true,
+    const rect = fieldCanvas.getBoundingClientRect();
+    renderFieldView(fieldCanvas, currentField, {
+        cssW: rect.width, cssH: rect.height,
     });
     const fr = document.getElementById('fieldRange');
     fr.textContent = currentField ? `${currentField.min} ~ ${currentField.max} m` : '';

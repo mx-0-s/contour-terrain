@@ -1,6 +1,6 @@
 import { elevationColor } from './heightfield.js';
 
-export function renderFieldView(canvas, field, strokes, opts) {
+export function renderFieldView(canvas, field, opts) {
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
     const cssW = opts.cssW, cssH = opts.cssH;
@@ -41,20 +41,6 @@ export function renderFieldView(canvas, field, strokes, opts) {
     octx.putImageData(img, 0, 0);
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(off, 0, 0, cssW, cssH);
-
-    if (opts.showContours !== false && strokes) {
-        ctx.lineJoin = 'round';
-        ctx.lineCap = 'round';
-        for (const s of strokes) {
-            if (s.elevation === null || s.points.length < 2) continue;
-            ctx.strokeStyle = 'rgba(20,20,20,0.65)';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(s.points[0].x, s.points[0].y);
-            for (let i = 1; i < s.points.length; i++) ctx.lineTo(s.points[i].x, s.points[i].y);
-            ctx.stroke();
-        }
-    }
 
     const barW = Math.min(140, cssW * 0.35);
     const barH = 8;
