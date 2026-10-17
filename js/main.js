@@ -24,6 +24,7 @@ function areaSideKm() { return Math.sqrt(state.area); }
 
 const statusText = document.getElementById('statusText');
 function setStatus(t) { statusText.textContent = t; }
+const themeToggle = document.getElementById('themeToggle');
 
 const drawCanvas = document.getElementById('drawCanvas');
 const fieldCanvas = document.getElementById('fieldCanvas');
@@ -35,7 +36,7 @@ const canvas = document.getElementById('glCanvas');
 const viewport = document.querySelector('.viewport');
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x151a18);
+scene.background = new THREE.Color(0xeaf3f9);
 
 const camera = new THREE.PerspectiveCamera(45, 1, 0.01, 5000);
 camera.position.set(7, 5, 7);
@@ -51,7 +52,7 @@ scene.add(new THREE.AmbientLight(0xffffff, 0.65));
 const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
 dirLight.position.set(6, 10, 7);
 scene.add(dirLight);
-const dirLight2 = new THREE.DirectionalLight(0x8fb9a0, 0.35);
+const dirLight2 = new THREE.DirectionalLight(0x8bbbd8, 0.35);
 dirLight2.position.set(-6, -3, -6);
 scene.add(dirLight2);
 
@@ -68,7 +69,13 @@ function rebuildBase() {
         c.material?.dispose();
     }
     const side = areaSideKm();
-    const grid = new THREE.GridHelper(side, 10, 0x637c6e, 0x35413b);
+    const dark = document.documentElement.dataset.theme === 'dark';
+    const grid = new THREE.GridHelper(
+        side,
+        10,
+        dark ? 0x637c6e : 0x79a9c5,
+        dark ? 0x35413b : 0xc3d8e5,
+    );
     grid.material.transparent = true;
     grid.material.opacity = 0.6;
     grid.visible = state.showGrid;
@@ -77,10 +84,25 @@ function rebuildBase() {
 
     const plate = new THREE.Mesh(
         new THREE.BoxGeometry(side, 0.15, side),
-        new THREE.MeshStandardMaterial({ color: 0x252e2a, roughness: 0.9 })
+        new THREE.MeshStandardMaterial({
+            color: dark ? 0x252e2a : 0xd3e5ef,
+            roughness: 0.9,
+        })
     );
     plate.position.y = -0.078;
     baseGroup.add(plate);
+}
+
+function setTheme(theme) {
+    const dark = theme === 'dark';
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    themeToggle.textContent = dark ? '☀ 浅色' : '☾ 深色';
+    themeToggle.setAttribute('aria-label', dark ? '切换到浅色模式' : '切换到深色模式');
+    themeToggle.title = dark ? '切换到浅色模式' : '切换到深色模式';
+    themeToggle.setAttribute('aria-pressed', String(dark));
+    scene.background.set(dark ? 0x151a18 : 0xeaf3f9);
+    localStorage.setItem('contour-terrain-theme', dark ? 'dark' : 'light');
+    rebuildBase();
 }
 
 function buildTerrain(field) {
@@ -365,7 +387,10 @@ document.getElementById('showGrid').addEventListener('change', (e) => {
     baseGroup.children.forEach(c => { if (c.userData.isGrid) c.visible = state.showGrid; });
 });
 
-rebuildBase();
+themeToggle.addEventListener('click', () => {
+    setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+});
+setTheme(localStorage.getItem('contour-terrain-theme') === 'dark' ? 'dark' : 'light');
 updateWarningList([]);
 window.addEventListener('resize', () => {
     clearTimeout(genTimer);

@@ -219,9 +219,9 @@ export class DrawingBoard {
         if (!w || !h) return;
         ctx.clearRect(0, 0, w, h);
 
-        ctx.fillStyle = '#f6f3ea';
+        ctx.fillStyle = '#f5fbff';
         ctx.fillRect(0, 0, w, h);
-        ctx.strokeStyle = '#dfddd2';
+        ctx.strokeStyle = '#d9e9f2';
         ctx.lineWidth = 1;
         const step = 40;
         ctx.beginPath();
@@ -229,7 +229,7 @@ export class DrawingBoard {
         for (let y = step; y < h; y += step) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
         ctx.stroke();
 
-        ctx.strokeStyle = 'rgba(104,145,112,0.38)';
+        ctx.strokeStyle = 'rgba(75,145,185,0.42)';
         ctx.setLineDash([4, 4]);
         ctx.strokeRect(BORDER_TOL, BORDER_TOL, w - BORDER_TOL * 2, h - BORDER_TOL * 2);
         ctx.setLineDash([]);
@@ -246,7 +246,7 @@ export class DrawingBoard {
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
         ctx.lineWidth = this.penWidth + (selected ? 2 : 0);
-        ctx.strokeStyle = draft ? '#5b9470' : (selected ? '#bd704f' : '#2b2b2b');
+        ctx.strokeStyle = draft ? '#438db8' : (selected ? '#d07b52' : '#263b49');
         if (draft) ctx.setLineDash([6, 5]);
         ctx.beginPath();
         ctx.moveTo(pts[0].x, pts[0].y);
@@ -261,10 +261,10 @@ export class DrawingBoard {
             const tw = ctx.measureText(label).width;
             ctx.fillStyle = 'rgba(255,255,255,0.88)';
             ctx.fillRect(mid.x + 6, mid.y - 16, tw + 8, 17);
-            ctx.strokeStyle = '#c9c2b0';
+            ctx.strokeStyle = '#b8d0df';
             ctx.lineWidth = 1;
             ctx.strokeRect(mid.x + 6, mid.y - 16, tw + 8, 17);
-            ctx.fillStyle = '#426b4b';
+            ctx.fillStyle = '#315e79';
             ctx.fillText(label, mid.x + 10, mid.y - 4);
         }
 
